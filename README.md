@@ -6,9 +6,11 @@ A demonstration of using rebase to base commits on a different branch.
 <style>
     .mine code {
         background-color: #80ff80;
+        color: #000000;
     }
     .theirs code {
         background-color: #ff0000;
+        color: #000000;
     }
     .main code {
         background-color: #0000ff;
@@ -20,22 +22,31 @@ A demonstration of using rebase to base commits on a different branch.
     }
     .another code {
         background-color: #ffc000;
+        color: #000000;
     }
 </style>
 
-> Ignore the HTML above if you see it. This repository is best viewed in
-Visual Studio code with the [Markdown Preview Enhanced](https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced)
-plugin enabled.
->
-> Use the _Markdown: Open Preview to the Side_ command, or click this
-> icon at the top of the window:
->
-> ![Preview-to-the-side icon](image.png)
+> Ignore the HTML above if you see it.
+----
+> This repository is best viewed in Visual Studio code with the following
+> plugins enabled:
+
+* [Markdown Preview Enhanced](https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced)
+* [Mermaid Preview](https://marketplace.visualstudio.com/items?itemName=vstirbu.vscode-mermaid-preview)
+
+> To get started:
+
+* Open the README.md file
+* Use the _Markdown: Open Preview to the Side_ command, or click this icon at
+the top of the window:
+![Preview-to-the-side icon](image.png)
+* You may then close the README.md buffer.
+
 ----
 
-* `main`
-* `feature1`
-* `my-patch1`
+* <span class='main'>`main`</span>
+* <span class='theirs'>`feature1`</span>
+* <span class='mine'>`my-patch1`</span>
 
 <blockquote>
 Note: <span class='main'><code>main</code></span> may be called
@@ -57,7 +68,7 @@ You can use the GitLens commit graph to view the results, or you can use
 this command:
 
 ```bash
-git log --graph
+git log --graph --all
 ```
 
 ## Scenario
