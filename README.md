@@ -42,8 +42,6 @@ the top of the window:
 ![Preview-to-the-side icon](image.png)
 * You may then close the README.md buffer.
 
->NOTE: This demo uses <span class='main'>`main`</span> for the main branch. Older repositories often use <span class='main'>`master`</span>.
-
 ----
 
 * <span class='main'>`main`</span>
@@ -61,7 +59,10 @@ This repository has this scenario set up for you to try.
 
 The line below is what changes between branches:
 
-You are on branch: <span class='mine'>`my-patch1`</span>, commit "fix-2"
+You are on branch: <span class='theirs'>`feature1`</span>
+
+Use `git switch`<code>_branch_</code> to switch to each of these branches, then
+switch to <span class='mine'>`my-patch`</span> to try out the fix.
 
 You can use the GitLens commit graph to view the results, or you can use
 this command:
@@ -72,111 +73,223 @@ git log --graph --all
 
 ## Scenario
 
-In this scenario, you have added a set of commits
-on top of main. Your goal is to collapse them into a
-single commit, with a new commit message.
+Let's say you are creating a patch, so you start a branch. Let's call it <span class='mine'>`my-patch1`</span>.
 
-This is the starting state:
+This is what you intend:
 
 ```mermaid
 gitGraph%%{init { 'theme': 'default', 'themeVariables': {
     'git0': '#0000ff',
     'git1': '#00ff00'
 } } }%%
-commit id: "Initial commit"
-commit id: "main"
+commit
+commit tag: "main" type: HIGHLIGHT
 branch my-patch1
-commit id: "feature1"
 commit id: "fix-1"
-commit id: "fix-2" type: HIGHLIGHT
+commit id: "fix-2"
 ```
 
-The goal is a single commit on <span class='mine'>`my-patch1`</span>, with a
-commit message of `Consolidated`.
+But let's say you forgot you were working on another branch, <span class='theirs'>`feature1`</span>,
+and do this instead:
 
 ```mermaid
-gitGraph%%{init { 'theme': 'default', 'themeVariables': {
+gitGraph
+%%{init { 'theme': 'default', 'themeVariables': {
     'git0': '#0000ff',
-    'git1': '#00ff00'
+    'git1': '#ff0000',
+    'git2': '#00ff00'
 } } }%%
-commit id: "Initial commit"
-commit id: "main"
+commit
+commit tag: "main"
+branch feature1
+commit type: HIGHLIGHT tag: "feature1"
 branch my-patch1
-commit id: "Consolidated" type: HIGHLIGHT
+commit id: "fix-1"
+commit id: "fix-2"
 ```
 
-To do this, we will do an interactive rebase:
+You want to fix it like this:
 
-`git rebase --interactive main`
-or
-`git rebase -i main`
-
-This will bring up an editor with the following lines:
-
-```text
-pick 2781cec main
-pick 1ad4df4 feature1
-pick 18c87da fix-1
-pick 9234649 fix-2
+```mermaid
+gitGraph
+%%{init { 'theme': 'default', 'themeVariables': {
+    'git0': '#0000ff',
+    'git1': '#ff0000',
+    'git2': '#00ff00'
+} } }%%
+commit
+commit tag: "main"
+branch feature1
+commit type: HIGHLIGHT tag: "feature1"
+checkout main
+branch my-patch1
+commit id: "fix-1"
+commit id: "fix-2"
 ```
 
-(There will also be blank and comment lines; we can ignore these).
+That is, you want to leave <span class='theirs'>`feature1`</span> alone
+and not include it in your pull request.
 
-These lines form a script that rewrites the current branch, going back to where branch <span class='main'>`main`</span> and branch <span class='ours'>`my-patch1`</span> diverge.
+## The fix: `git rebase --onto`
 
-We want to collapse `fix-1` and `fix-2` into them`feature1` commit, and give it a new message.
+To fix this, we need to tell git three things:
 
-To do this, we replace `pick` with `squash` on those two commits, like this:
+1. Where we want to put our commits. Here, that's
+<span class='main'>`main`</span>
+2. The patch before the range we want to move. Here,
+that's the <span class='theirs'>`feature1`</span> branch.
+3. The branch we want to move. Here, that's our
+<span class='mine'>`my-patch1`</span> branch
 
-```text
-pick 2781cec main
-pick 1ad4df4 feature1
-squash 18c87da fix-1
-squash 8675c09 fix-2
-```
-
-We save the file and exit the editor. Git will then proceed to execute the script.
-
-It will then bring up a text editor to supply the commit message.
-
-```text
-# This is a combination of 3 commits.
-# This is the 1st commit message:
-
-feature1
-
-# This is the commit message #2:
-
-fix-1
-
-# This is the commit message #3:
-
-fix-2
-```
-
-Once again, we can ignore comments. Replace the text above with the new message.
-
-```text
-3 consolidated commits
-```
-
-Save the editor buffer and exit the editor.
-
-You may need to do:
+To do this, we use `git rebase --onto`:
 
 ```bash
-git rebase --continue
+git rebase --onto main feature1 my-patch1
 ```
 
-If you run into problems, you can go back wt this:
+## The result
+
+```mermaid
+gitGraph
+%%{init { 'theme': 'default', 'themeVariables': {
+    'git0': '#0000ff',
+    'git1': '#ff0000',
+    'git2': '#808080',
+    'git3': '#00ff00'
+} } }%%
+commit
+commit tag: "main"
+branch feature1
+commit type: HIGHLIGHT tag: "feature1"
+branch "-old-my-patch1-"
+commit id: "fix-1"
+commit id: "fix-2"
+checkout main
+branch my-patch1
+commit id: "fix-1-copy"
+commit id: "fix-2-copy"
+```
+
+The result is that your fixes are copied into a new chain of commits
+starting with the current <span class='main'>`main`</span> commit.
+
+## The Pull Request
+
+One mistake that git is not very forgiving of is changing history
+that you've already shared with others via `git push`.
+
+### The easy case
+
+If you haven't pushed your branch yet, you're all set.
+You can safely push <span class='mine'>`my-patch`</span> and make your pull request.
 
 ```bash
-git rebase --abort
+git push --set-upstream origin my-patch
 ```
 
-This would be a good time to do:
+If not, you have two choices.
+
+### The safe option
+
+The problem is that it can cause difficulties and
+confusion for others who have already cloned your branch.
+
+To avoid this you can delete your pull request, if any, and then rename
+your branch, e.g. <span class='mine'>`my-patch-1`</span>:
 
 ```bash
-git pull -r origin main
-git push origin main
+git branch -M my-patch my-patch-1
+git push --set-upstream origin my-patch-1
 ```
+
+Then make a new pull request.
+
+### The quick option
+
+If nobody is using what you've pushed, you can do a
+_force push_ to update your branch. Normally, you can
+only add commits to branches when you push. But with
+the `--force-with-lease` option you can tell the server
+to simply set <span class='mine'>`my-patch`</span> to point to the new commit:
+
+```bash
+git push --set-upstream --force-with-lease origin my-patch
+```
+
+`--force-with-lease` is a newer, safer version of
+`--force` that avoids certain race conditions. It's good
+to get in the habit of using it instead of `--force`.
+
+## If you make a mistake
+
+The old commits remain in the repository. They are no longer
+referenced by your branch. They might be referenced by
+<span class='another'>`another-branch`</span> like this:
+
+```mermaid
+gitGraph
+%%{init { 'theme': 'default', 'themeVariables': {
+    'git0': '#0000ff',
+    'git1': '#ff0000',
+    'git2': '#808080',
+    'git3': '#ff8000',
+    'git4': '#00ff00'
+} } }%%
+commit
+commit tag: "main"
+branch feature1
+commit type: HIGHLIGHT tag: "feature1"
+branch "-old-my-patch1-"
+commit id: "fix-1"
+commit id: "fix-2"
+branch another-branch
+commit
+checkout main
+branch my-patch1
+commit id: "fix-1-copy"
+commit id: "fix-2-copy"
+```
+
+But that's unlikely in this scenario.
+
+You can also find the commit ID in the reflog and construct such a
+branch later if you need to recover. Git is very forgiving of most mistakes.
+
+If nothing references your old branch, git will eventually
+garbage collect those commits when pruning the reflog:
+(default: >90 days).
+
+To find past commits, the first place to look is on the remote branches.
+
+```bash
+git branch -v --all
+```
+
+Doing `git log` on these may identify which commit you need (often it is the
+tip of the corresponding remote branch itself).
+
+To find past commits that are no longer on any branch `git reflog` will list
+every commit that a branch has pointed to, for at least the past 90 days.
+
+Once you have identified the particular commit a branch should point to,
+e.g. `a03925f`, you can do:p
+
+```bash
+git switch my-branch1
+git reset --hard a03925f
+```
+
+This will move the branch to the indicated commit ID (`a03925f`) and update
+the working tree to match.
+
+Another convenient trick is to create a branch to remember a particular commit
+you want to investigate.
+
+```bash
+git switch -C temp a03925f
+```
+
+## More
+
+`git rebase` can do much more, including reordering history, but this is
+the most common usage.
