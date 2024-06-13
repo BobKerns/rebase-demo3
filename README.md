@@ -59,7 +59,7 @@ This repository has this scenario set up for you to try.
 
 The line below is what changes between branches:
 
-You are on branch: <span class='theirs'>`feature1`</span>
+You are on branch: <span class='mine'>`my-patch1`</span>, commit "fix-1"
 
 Use `git switch`<code>_branch_</code> to switch to each of these branches, then
 switch to <span class='mine'>`my-patch`</span> to try out the fix.
